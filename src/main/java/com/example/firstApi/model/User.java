@@ -56,11 +56,15 @@ public class User {
 
     // Enums
     public enum Status {
-        enabled, disabled
+        enabled,
+        disabled
     }
 
     public enum Role {
-        user, admin, reviewer, researcher
+        user,
+        admin,
+        reviewer,
+        researcher
     }
 
     // Helper for full name
@@ -188,4 +192,5 @@ public class User {
     public void setUpdatedAt(Timestamp updatedAt) {
         this.updatedAt = updatedAt;
     }
+
 }

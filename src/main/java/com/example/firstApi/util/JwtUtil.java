@@ -13,10 +13,19 @@ public class JwtUtil {
 
     public static String generateToken(Map<String, Object> claims, long expirationMs) {
         return Jwts.builder()
-            .setClaims(claims)
-            .setIssuedAt(new Date())
-            .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
-            .signWith(key, SignatureAlgorithm.HS256)
-            .compact();
+                .setClaims(claims)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
     }
+
+    public static Claims validateToken(String token) throws JwtException {
+        return Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+    }
+
 }

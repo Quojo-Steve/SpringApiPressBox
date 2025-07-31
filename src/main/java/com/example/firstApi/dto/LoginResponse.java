@@ -1,8 +1,5 @@
 package com.example.firstApi.dto;
 
-import com.example.firstApi.model.User;
-import com.example.firstApi.model.Source;
-
 public class LoginResponse {
     public boolean status;
     public Object data;

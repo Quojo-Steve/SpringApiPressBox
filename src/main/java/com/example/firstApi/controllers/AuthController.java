@@ -12,12 +12,14 @@ import com.example.firstApi.repository.SourceRepository;
 import com.example.firstApi.util.ImageUtil;
 import com.example.firstApi.util.JwtUtil;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -29,7 +31,8 @@ public class AuthController {
     private final UserRepository userRepository;
     private final SourceRepository sourceRepository;
 
-    public AuthController(UserRepository userRepository, SourceRepository sourceRepository, SourceSocialRepository sourceSocialRepository) {
+    public AuthController(UserRepository userRepository, SourceRepository sourceRepository,
+            SourceSocialRepository sourceSocialRepository) {
         this.userRepository = userRepository;
         this.sourceRepository = sourceRepository;
         this.sourceSocialRepository = sourceSocialRepository;
@@ -140,6 +143,69 @@ public class AuthController {
                     "status", false,
                     "message", e.getMessage(),
                     "type", "auth.source.create.failed"));
+        }
+    }
+
+    @PostMapping("/superadmin/login")
+    public ResponseEntity<?> superadminLogin(@RequestBody Map<String, String> body) {
+        String email = body.get("email");
+        String password = body.get("password");
+
+        try {
+            Optional<User> userOpt = userRepository.findByEmail(email);
+
+            if (userOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                        "status", false,
+                        "message", "Please ensure that the email or password is correct",
+                        "type", "auth.user.email.notfound"));
+            }
+
+            User user = userOpt.get();
+
+            if (user.getRole() == User.Role.user) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                        "status", false,
+                        "message", "This account has no superadmin privileges",
+                        "type", "auth.admin.login.failed"));
+            }
+
+            if (user.getStatus() == User.Status.disabled) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                        "status", false,
+                        "message", "This account has been deactivated",
+                        "type", "auth.admin.login.failed"));
+            }
+
+            boolean verified = BCrypt.checkpw(password, user.getPassword());
+
+            if (!verified) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                        "status", false,
+                        "message", "The email or password is incorrect",
+                        "type", "auth.admin.login.failed"));
+            }
+
+            // Success — build JWT
+            Map<String, Object> claims = Map.of("admin_id", user.getUserId());
+            String token = JwtUtil.generateToken(claims, 86400000); // 1 day
+
+            user.setPassword(null); // remove password from response
+
+            return ResponseEntity.ok(Map.of(
+                    "status", true,
+                    "message", "Superadmin logged in successfully",
+                    "type", "auth.admin.login.success",
+                    "data", Map.of(
+                            "admin_id", user.getUserId(),
+                            "admin", user,
+                            "token", token)));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of(
+                    "status", false,
+                    "message", e.getMessage(),
+                    "type", "auth.admin.login.failed"));
         }
     }
 
