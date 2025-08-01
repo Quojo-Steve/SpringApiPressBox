@@ -1,6 +1,5 @@
 package com.example.firstApi.service;
 
-import com.example.firstApi.model.User;
 import com.example.firstApi.repository.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
